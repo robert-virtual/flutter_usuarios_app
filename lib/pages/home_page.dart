@@ -14,7 +14,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final url = Uri.parse("http://10.0.2.2:3030/usuarios");
   final headers = {"Content-Type": "application/json;charset=UTF-8"};
-  late Future<List<Usuario>> usuarios;
+  late Future<Usuario> usuario;
   final nombre = TextEditingController();
   final email = TextEditingController();
   @override
@@ -23,27 +23,23 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: const Text('Usuarios App'),
       ),
-      body: FutureBuilder<List<Usuario>>(
-          future: usuarios,
+      body: FutureBuilder<Usuario>(
+          future: usuario,
           builder: (context, snap) {
             if (snap.hasData) {
-              return ListView.builder(
-                  itemCount: snap.data!.length,
-                  itemBuilder: (context, i) {
-                    return Column(
-                      children: [
-                        ListTile(
-                          title: Text(snap.data![i].nombre),
-                          subtitle: Text(snap.data![i].email),
-                        ),
-                        const Divider()
-                      ],
-                    );
-                  });
+              return Column(
+                children: [
+                  ListTile(
+                    title: Text(snap.data!.nombre),
+                    subtitle: Text(snap.data!.email),
+                  ),
+                  const Divider()
+                ],
+              );
             }
             if (snap.hasError) {
-              return const Center(
-                child: Text("Ups ha habido un error"),
+              return  Center(
+                child: Text("Ups ha habido un error: ${snap.error}"),
               );
             }
 
@@ -98,19 +94,19 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    usuarios = getUsuarios();
+    usuario = getUsuario();
   }
 
-  Future<List<Usuario>> getUsuarios() async {
+  Future<Usuario> getUsuario() async {
     final res = await http.get(url); //texto
-    final lista = List.from(jsonDecode(res.body));
 
-    List<Usuario> usuarios = [];
-    lista.forEach((element) {
-      final Usuario user = Usuario.fromJson(element);
-      usuarios.add(user);
-    });
-    return usuarios.reversed.toList();
+    if (res.statusCode == 200) {
+      final json = jsonDecode(res.body);
+      final Usuario user = Usuario.fromJson(json);
+
+      return user;
+    }
+    return Future.error('No se pudo cargar la informacion de usuario');
   }
 
   void saveUsuario() async {
@@ -119,8 +115,7 @@ class _HomePageState extends State<HomePage> {
     nombre.clear();
     email.clear();
     setState(() {
-      usuarios = getUsuarios();
+      usuario = getUsuario();
     });
-
   }
 }
